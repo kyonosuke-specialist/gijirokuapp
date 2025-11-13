@@ -1,210 +1,177 @@
-# 議事録感情分析アプリ - Web UI
+# 議事録AI分析アプリ - Web UI
 
 ## 概要
 音声ファイル（MP3/MP4）から文字起こし、議事録要約、感情分析を行うWebアプリケーションのフロントエンド部分です。
 
 ## 機能
 - **ファイルアップロード**: MP3/MP4ファイルのドラッグ&ドロップアップロード
-- **処理状況確認**: アップロードしたファイルの処理状況をリアルタイム表示
-- **結果表示**: 
-  - 議事録要約（Bedrock Claude 3 Haiku生成）
-  - 文字起こし結果（Amazon Transcribe）
-  - 感情分析結果（Amazon Comprehend）
-- **ダウンロード**: TXT、MD、議事録要約の各形式でダウンロード可能
+- **リアルタイム進捗表示**: プログレスバーで処理状況を可視化
+  - アップロード完了
+  - 文字起こし中（Amazon Transcribe）
+  - 要約生成中（Amazon Bedrock）
+  - 感情分析中（Amazon Comprehend）
+  - 処理完了
+- **結果ダウンロード**: 
+  - 文字起こしテキスト（.txt）
+  - 議事録要約（.html）
+  - 感情分析結果（.tar.gz）
 
-## ローカル開発環境での実行方法
+## システム構成
 
-### 1. 必要な環境
-- モダンなWebブラウザ（Chrome、Firefox、Safari、Edge）
-- ローカルWebサーバー（推奨）
+### フロントエンド
+- 静的HTML/CSS/JavaScript（S3 + CloudFront）
+- AWS SDK for JavaScript（ブラウザ版）
+- Amazon Cognito認証
 
-### 2. 実行手順
-
-#### 方法1: Python簡易サーバー（推奨）
-```bash
-# webフォルダに移動
-cd gijirokuapps/web
-
-# Python 3の場合
-python -m http.server 8000
-
-# Python 2の場合
-python -m SimpleHTTPServer 8000
-```
-
-#### 方法2: Node.js http-server
-```bash
-# http-serverをインストール（初回のみ）
-npm install -g http-server
-
-# webフォルダに移動
-cd gijirokuapps/web
-
-# サーバー起動
-http-server -p 8000
-```
-
-#### 方法3: Live Server（VS Code拡張機能）
-1. VS Codeで`index.html`を開く
-2. 右クリック → "Open with Live Server"
-
-### 3. アクセス方法
-ブラウザで `http://localhost:8000` にアクセス
-
-### 4. 開発モードの機能
-- **簡易認証**: ユーザー名・パスワード入力（任意の値でOK）
-- **模擬処理**: 実際のAWSサービスを使わずに動作確認可能
-- **ローカルストレージ**: ブラウザのローカルストレージにデータ保存
-- **模擬結果**: サンプルの文字起こし・要約・感情分析結果を表示
+### バックエンド
+- AWS Step Functions（処理ワークフロー）
+- Amazon DynamoDB（ジョブ管理・進捗状況）
+- Amazon S3（ファイル保存）
+- Amazon Transcribe（文字起こし）
+- Amazon Bedrock（議事録要約）
+- Amazon Comprehend（感情分析）
 
 ## ファイル構成
 ```
 web/
-├── index.html          # メインページ（アップロード・処理状況）
-├── result.html         # 結果表示ページ
+├── index.html          # メインページ（アップロード・進捗表示・ダウンロード）
 ├── css/
-│   └── style.css       # スタイルシート
+│   └── style.css       # スタイルシート（プログレスバー含む）
 ├── js/
-│   ├── auth.js         # 認証管理（開発用簡易認証）
-│   ├── main.js         # メインロジック・ジョブ管理
+│   ├── config.js       # AWS設定管理
+│   ├── auth.js         # Cognito認証管理
+│   ├── s3-client.js    # S3操作クライアント
+│   ├── dynamo-client.js # DynamoDB操作クライアント
 │   ├── upload.js       # ファイルアップロード機能
-│   └── result.js       # 結果表示・ダウンロード機能
+│   └── main.js         # プログレス管理・ダウンロード機能
+├── deploy.js           # 本番環境設定
 └── README.md           # このファイル
 ```
 
-## 開発モードの特徴
+## 使用方法
 
-### 認証システム
-- 開発モードでは簡易認証を使用
-- 任意のユーザー名・パスワードでログイン可能
-- 本番環境ではAWS Cognitoに切り替え
+### 1. ファイルアップロード
+1. MP3またはMP4ファイルをドラッグ&ドロップ、または「ファイルを選択」ボタンをクリック
+2. ファイルサイズ制限: 最大100MB
+3. アップロード完了後、ジョブIDが表示されます
 
-### データ保存
-- ブラウザのローカルストレージを使用
-- ページリロード後もデータが保持される
-- ログアウト時に全データクリア
+### 2. 進捗確認
+- プログレスバーが自動的に表示され、3秒ごとに処理状況を更新
+- 処理ステータス:
+  - **アップロード完了** (20%)
+  - **文字起こし中** (40%)
+  - **要約生成中** (60%)
+  - **感情分析中** (80%)
+  - **処理完了** (100%)
 
-### 模擬処理フロー
-1. ファイルアップロード（MP3/MP4検証のみ）
-2. 処理状況表示（UPLOADED → PROCESSING → COMPLETED）
-3. 模擬結果生成（サンプルデータ）
-4. 結果表示・ダウンロード
+### 3. ファイルダウンロード
+1. ジョブID入力欄に表示されたジョブIDを確認
+2. 処理完了後、各ボタンをクリックしてダウンロード:
+   - **文字起こし**: テキストファイル
+   - **要約**: HTML形式の議事録
+   - **感情分析**: tar.gz形式の分析結果
 
-## S3本番環境デプロイ手順
+## 本番環境デプロイ
 
-### 1. 事前準備
-必要なAWSリソースが作成済みであることを確認してください：
+### 事前準備
+必要なAWSリソースが作成済みであることを確認:
 - S3バケット（静的サイトホスティング設定済み）
+- CloudFront（配信）
 - Cognito User Pool & Identity Pool
-- DynamoDB テーブル（ProcessingJobs）
+- DynamoDB テーブル（`minutes-app-team-a-dynamodb`）
 - Step Functions（処理ワークフロー）
 - IAM ロール・ポリシー
 
-### 2. 設定ファイル更新
-`js/deploy.js` ファイルの `PRODUCTION_CONFIG` を実際の値に更新：
+### デプロイ手順
 
+#### 1. AWS設定確認
+`js/config.js` の設定値を確認:
 ```javascript
-const PRODUCTION_CONFIG = {
-    userPoolId: 'ap-northeast-1_YOUR_USER_POOL_ID',
-    clientId: 'YOUR_APP_CLIENT_ID',
-    identityPoolId: 'ap-northeast-1:YOUR_IDENTITY_POOL_ID',
-    bucketName: 'your-actual-bucket-name',
-    dynamoTableName: 'ProcessingJobs'
-};
+userPoolId: 'ap-northeast-1_IZajChZJD'
+clientId: '7k7s2cko3vdf94lfghdac07dc0'
+identityPoolId: 'ap-northeast-1:865e8342-6bbc-4f1f-ba5b-0c07164b112e'
+bucketName: 'minutes-app-team-a-backet'
+dynamoTableName: 'minutes-app-team-a-dynamodb'
 ```
 
-### 3. S3バケットへのアップロード
-
-#### 方法1: AWS CLI使用
+#### 2. S3バケットへアップロード
 ```bash
 # webフォルダに移動
 cd gijirokuapps/web
 
 # S3バケットに同期アップロード
-aws s3 sync . s3://your-bucket-name/web/ --delete
-
-# バケットポリシー確認
-aws s3api get-bucket-policy --bucket your-bucket-name
+aws s3 sync . s3://minutes-app-team-a-web-backet/ --delete
 ```
 
-#### 方法2: AWS Console使用
-1. AWS S3コンソールにアクセス
-2. 対象バケットを選択
-3. webフォルダ内の全ファイルをアップロード
-4. パブリック読み取り権限を設定
-
-### 4. 静的サイトホスティング設定
+#### 3. CloudFront無効化（キャッシュクリア）
 ```bash
-# 静的サイトホスティング有効化
-aws s3 website s3://your-bucket-name --index-document index.html --error-document index.html
+aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
 ```
 
-### 5. CloudFront設定（推奨）
-- ディストリビューション作成
-- オリジンをS3バケットに設定
-- キャッシュ動作の設定
-- カスタムドメイン設定（オプション）
+### アクセスURL
+- 本番環境: https://d1lygg7omlk19y.cloudfront.net/
 
-### 6. 動作確認
-1. S3静的サイトURLまたはCloudFrontURLにアクセス
-2. Cognito認証が正常に動作することを確認
-3. ファイルアップロード機能をテスト
-4. 処理完了後の結果表示を確認
+## 技術仕様
 
-### 7. セキュリティ設定
-- HTTPS通信の強制
-- CORS設定の確認
-- バケットポリシーの最適化
-- IAM権限の最小化
+### 認証
+- Amazon Cognito User Pool認証
+- Identity Poolで一時的なAWS認証情報を取得
+- S3、DynamoDBへの直接アクセス
 
-## 本番環境での機能
+### プログレスバー実装
+- DynamoDBから3秒ごとにジョブステータスをポーリング
+- Step Functionsが各処理段階でDynamoDBを更新
+- ステータス: `UPLOADED` → `TRANSCRIBING` → `SUMMARIZING` → `ANALYZING` → `COMPLETED`
 
-### 実装済み機能
-- ✅ Cognito認証システム
-- ✅ S3 Pre-signed URLアップロード
-- ✅ DynamoDB ジョブ管理
-- ✅ S3結果ファイル取得
-- ✅ 環境自動判定（開発/本番）
-- ✅ エラーハンドリング
-- ✅ プログレス表示
+### Job ID管理
+- フォーマット: `job_TIMESTAMP_RANDOM`（先頭3要素のみ）
+- 例: `job_1762999058153_7qt2o54zq`
+- フロントエンドとStep Functionsで統一
 
-### AWS連携機能
-- **認証**: Cognito User Pool認証
-- **ファイルアップロード**: S3 Pre-signed URL
-- **ジョブ管理**: DynamoDB直接アクセス
-- **結果取得**: S3ファイル取得
-- **処理開始**: S3イベント → Step Functions
-
-### 必要なAWSリソース
-- S3バケット（静的サイトホスティング）
-- Cognito（ユーザー認証）
-- DynamoDB（ジョブ管理）
-- Step Functions（処理ワークフロー）
-- Transcribe（文字起こし）
-- Bedrock（議事録要約）
-- Comprehend（感情分析）
+### エラーハンドリング
+- ファイル検証（形式・サイズ）
+- AWS SDK エラーハンドリング
+- DynamoDB接続エラー時はコンソールログのみ
 
 ## トラブルシューティング
 
-### よくある問題
-1. **CORS エラー**: ローカルサーバーを使用してください
-2. **ファイルが読み込まれない**: パスが正しいか確認
-3. **認証プロンプトが表示されない**: ブラウザの設定を確認
+### プログレスバーが更新されない
+1. ブラウザコンソール（F12）でログを確認
+2. DynamoDBでジョブステータスを確認
+3. Step Functionsの実行履歴を確認
 
-### デバッグ方法
-- ブラウザの開発者ツール（F12）でコンソールログを確認
-- ローカルストレージの内容を確認（Application タブ）
-- ネットワークタブでリクエストを確認
+### ダウンロードエラー
+1. ジョブIDが正しいか確認
+2. 処理が完了しているか確認（ステータス: `COMPLETED`）
+3. S3バケットにファイルが存在するか確認
+
+### 認証エラー
+1. Cognito ID Tokenの有効期限を確認
+2. Identity Poolの権限を確認
+3. ブラウザのローカルストレージをクリアして再ログイン
+
+## セキュリティ
+
+- HTTPS通信（CloudFront）
+- Cognito認証必須
+- IAM権限の最小化
+- Pre-signed URLは使用せず、Identity Pool認証で直接アクセス
+
+## パフォーマンス
+
+- 処理時間: 5分の音声ファイルで約3-5分
+- ポーリング間隔: 3秒（DynamoDB料金考慮）
+- 同時処理: Step Functionsで自動スケーリング
 
 ## 今後の拡張予定
-- [ ] プログレスバー表示
-- [ ] 自動更新機能
-- [ ] ファイルプレビュー
-- [ ] 感情分析結果のグラフ表示
-- [ ] ダークモード対応
-- [ ] 多言語対応
+- [ ] WebSocket（API Gateway）でリアルタイム通知
+- [ ] 処理時間の予測表示
+- [ ] 複数ファイルの並行処理
+- [ ] プッシュ通知（処理完了時）
+- [ ] 履歴管理機能
 
-## 注意事項
-- 開発モードでは実際のAI処理は行われません
-- 本番環境では適切なセキュリティ設定が必要です
-- ファイルサイズ制限（100MB）は実装済みです
+## ライセンス
+MIT License
+
+## 作成者
+kyonosuke-specialist
