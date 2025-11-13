@@ -163,8 +163,7 @@ class S3Client {
                     reject(new Error(`ファイル取得に失敗しました: ${err.message}`));
                 } else {
                     console.log('S3ファイル取得成功:', s3Key);
-                    const content = data.Body.toString('utf-8');
-                    resolve(content);
+                    resolve(data.Body);
                 }
             });
         });

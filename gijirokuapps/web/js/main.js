@@ -43,15 +43,6 @@ class JobManager {
                 }
             });
         }
-        
-        const refreshHistoryBtn = document.getElementById('refresh-history-btn');
-        if (refreshHistoryBtn) {
-            refreshHistoryBtn.addEventListener('click', () => {
-                this.loadHistory();
-            });
-        }
-        
-        this.loadHistory();
     }
     
     // ジョブ追加（アップロード時に呼び出される）
@@ -79,7 +70,7 @@ class JobManager {
             
             const transcriptText = await window.s3Client.getFileContent(s3Key);
             const fileName = this.extractFileName(jobId) || jobId;
-            this.downloadFileContent(transcriptText, `${fileName}_文字起こし.txt`, 'text/plain');
+            this.downloadFileContent(transcriptText, `${fileName}_文字起こし.txt`, 'text/plain; charset=utf-8');
             alert('文字起こしファイルをダウンロードしました');
         } catch (e) {
             console.error('ダウンロードエラー詳細:', e);
@@ -90,12 +81,12 @@ class JobManager {
     async downloadSummary(jobId) {
         try {
             const cleanJobId = this.getCleanJobId(jobId);
-            const s3Key = `output-bedrock/summary_${cleanJobId}.txt`;
+            const s3Key = `output-bedrock/summary_${cleanJobId}.html`;
             console.log('要約ダウンロード試行:', s3Key);
             
             const summaryText = await window.s3Client.getFileContent(s3Key);
             const fileName = this.extractFileName(jobId) || jobId;
-            this.downloadFileContent(summaryText, `${fileName}_議事録要約.txt`, 'text/plain');
+            this.downloadFileContent(summaryText, `${fileName}_議事録要約.html`, 'text/plain; charset=utf-8');
             alert('議事録要約をダウンロードしました');
         } catch (e) {
             console.error('要約ダウンロードエラー:', e);
@@ -106,20 +97,23 @@ class JobManager {
     async downloadSentiment(jobId) {
         try {
             const cleanJobId = this.getCleanJobId(jobId);
-            const s3Key = `output-conprehend/comprehend_${cleanJobId}.txt`;
+            const s3Key = `output-comprehend/comprehend_${cleanJobId}.tar.gz`;
             console.log('感情分析ダウンロード試行:', s3Key);
             
+            // S3からオブジェクト取得（AWS SDK v3想定）
             const sentimentText = await window.s3Client.getFileContent(s3Key);
+
             const fileName = this.extractFileName(jobId) || jobId;
-            this.downloadFileContent(sentimentText, `${fileName}_感情分析.txt`, 'text/plain');
-            alert('感情分析結果をダウンロードしました');
+            this.downloadFileContent(sentimentText, `${fileName}_感情分析.tar.gz`, 'application/gzip');
+            alert('議事録要約をダウンロードしました');
+
         } catch (e) {
             console.error('感情分析ダウンロードエラー:', e);
             alert(`感情分析結果のダウンロードに失敗しました: ${e.message}`);
         }
     }
     
-    // ジョブIDからファイル名部分を除去したクリーンなIDを取得
+    // ジョブIDからファイル名部分を除去したクリーンなIDを取得 
     getCleanJobId(jobId) {
         const parts = jobId.split('_');
         if (parts.length >= 3) {
