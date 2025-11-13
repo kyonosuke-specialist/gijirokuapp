@@ -1,7 +1,0 @@
-"job_id","created_at","error_message","file_name","file_size","file_type","s3_upload_key","sentiment_s3_key","status","summary_s3_key","transcript_s3_key","updated_at","user_id"
-"job_1762999058153_7qt2o54zq_testdata-miura","2025-11-13T01:57:38.452Z","null","testdata-miura.mp3","118066","audio/mpeg","input-data/job_1762999058153_7qt2o54zq_testdata-miura","null","UPLOADED","null","null","2025-11-13T01:57:38.452Z","d704ca18-7061-7048-57df-710834fc46c0"
-"job_1762999008688_h87nsbstp_testdata-miura","2025-11-13T01:56:49.000Z","null","testdata-miura.mp3","118066","audio/mpeg","input-data/job_1762999008688_h87nsbstp_testdata-miura","null","UPLOADED","null","null","2025-11-13T01:56:49.000Z","d704ca18-7061-7048-57df-710834fc46c0"
-"job_1762998893631_xkykpmnje","","","","","","","","ANALYZING","","output-transcribe/transcribe_job_1762998893631_xkykpmnje.txt","2025-11-13T01:55:06.804Z",""
-"job_1762998893631_xkykpmnje_testdata-miura","2025-11-13T01:54:54.005Z","null","testdata-miura.mp3","118066","audio/mpeg","input-data/job_1762998893631_xkykpmnje_testdata-miura","null","UPLOADED","null","null","2025-11-13T01:54:54.005Z","d704ca18-7061-7048-57df-710834fc46c0"
-"job_1762999058153_7qt2o54zq","","","","","","","","ANALYZING","","output-transcribe/transcribe_job_1762999058153_7qt2o54zq.txt","2025-11-13T01:57:51.051Z",""
-"job_1762999008688_h87nsbstp","","","","","","","","ANALYZING","","output-transcribe/transcribe_job_1762999008688_h87nsbstp.txt","2025-11-13T01:57:01.635Z",""
